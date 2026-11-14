@@ -28,7 +28,16 @@ def main() -> None:
     src = here / "image.jpg"
     out_dir = Path(OUTPUT_DIR)
     out_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(src, out_dir / "entry.png")
+    out = out_dir / "entry.png"
+    shutil.copyfile(src, out)
+    # Guard: the gate is a PNG or JPEG by magic bytes, at most 1 MiB and
+    # at most 1024x1024 px. Fail loudly here rather than submitting a
+    # file the judge would reject as unreadable.
+    data = out.read_bytes()
+    if len(data) > 1024 * 1024:
+        raise SystemExit(f"entry.png is {len(data)} bytes, over the 1 MiB limit")
+    if not (data[:3] == b"\xff\xd8\xff" or data[:8] == b"\x89PNG\r\n\x1a\n"):
+        raise SystemExit("entry.png is neither a JPEG nor a PNG")
 
 
 if __name__ == "__main__":
